@@ -137,11 +137,13 @@ void FSYMBOL(avl_balance)(struct avl_root *root, struct avl_node *node) {
 			/* LR */
 			if (FSYMBOL(avl_balance_factor)(parent->left) < 0)
 				FSYMBOL(avl_left_rotate)(root, parent->left);
+			/* LL */
 			FSYMBOL(avl_right_rotate)(root, parent);
 		} else if (bf < -1) { /* RR RL */
 			/* RL */
 			if (FSYMBOL(avl_balance_factor)(parent->right) > 0)
 				FSYMBOL(avl_right_rotate)(root, parent->right);
+			/* RR */
 			FSYMBOL(avl_left_rotate)(root, parent);
 		}
 	}
@@ -153,7 +155,8 @@ void FSYMBOL(avl_balance)(struct avl_root *root, struct avl_node *node) {
 * @return: void
 */
 void FSYMBOL(avl_erase_fix)(struct avl_root *root, struct avl_node *node) {
-	struct avl_node *parent = node->parent, *successor;
+	struct avl_node *parent = node->parent, *left = node->left,
+		*right = node->right, *successor;
 	/*
 	*   n          r          r
 	*  / \        / \        / \
@@ -169,8 +172,8 @@ void FSYMBOL(avl_erase_fix)(struct avl_root *root, struct avl_node *node) {
 	*   / \        / \
 	* nil  r3    nil  r3
 	*/
-	if (node->left && node->right) {
-		successor = node->right;
+	if (left && right) {
+		successor = right;
 		if (successor->left) {
 			do {
 				parent = successor;
@@ -179,23 +182,23 @@ void FSYMBOL(avl_erase_fix)(struct avl_root *root, struct avl_node *node) {
 
 			/* 'successor right' becomes 'parent left' */
 			parent->left = successor->right;
-			if (successor->right)
+			if (parent->left)
 				parent->left->parent = parent;
 
 			/* 'node right' becomes 'successor right' */
-			successor->right = node->right;
-			successor->right->parent = successor;
+			successor->right = right;
+			right->parent = successor;
 		}
 
 		/* 'node left' becomes 'successor left' */
-		successor->left = node->left;
-		successor->left->parent = successor;
+		successor->left = left;
+		left->parent = successor;
 
 		/* 'successor' becomes 'node parent child' */
 		FSYMBOL(avl_change_child)(root, node->parent, node, successor);
 		successor->parent = node->parent;
 
-		if (successor == node->right) {
+		if (successor == right) {
 			FSYMBOL(avl_balance)(root, successor->left);
 		} else {
 			FSYMBOL(avl_balance)(root, successor);
@@ -210,12 +213,11 @@ void FSYMBOL(avl_erase_fix)(struct avl_root *root, struct avl_node *node) {
 	*  / \
 	* l  nil
 	*/
-	if (node->left) {
+	if (left) {
 		/* 'node left' becomes 'parent child' */
-		FSYMBOL(avl_change_child)(root, parent, node, node->left);
-		node->left->parent = parent;
-
-		FSYMBOL(avl_balance)(root, node->left);
+		FSYMBOL(avl_change_child)(root, parent, node, left);
+		left->parent = parent;
+		FSYMBOL(avl_balance)(root, left);
 
 		return;
 	}
@@ -226,12 +228,11 @@ void FSYMBOL(avl_erase_fix)(struct avl_root *root, struct avl_node *node) {
 	*   / \
 	* nil  r
 	*/
-	if (node->right) {
+	if (right) {
 		/* 'node right' becomes 'parent child' */
-		FSYMBOL(avl_change_child)(root, parent, node, node->right);
-		node->right->parent = parent;
-
-		FSYMBOL(avl_balance)(root, node->right);
+		FSYMBOL(avl_change_child)(root, parent, node, right);
+		right->parent = parent;
+		FSYMBOL(avl_balance)(root, right);
 
 		return;
 	}
